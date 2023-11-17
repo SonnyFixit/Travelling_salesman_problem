@@ -1,133 +1,132 @@
+import numpy as np
 import random
-import numpy as np
 
-import numpy as np
+def load_triangular_matrix(file_path):
+    with open(file_path, 'r') as file:
+        # Skip the first row
+        lines = file.readlines()[1:]
+        matrix = [list(map(int, line.split())) for line in lines]
+    return matrix
 
-def read_distance_matrix(filename):
-    with open(filename, 'r') as file:
-        lines = file.readlines()[1:] 
-        distance_matrix = [list(map(int, line.split())) for line in lines]
-    
-    num_cities = len(distance_matrix) + 1
-    full_distance_matrix = np.zeros((num_cities, num_cities), dtype=int)
-    
-    for i in range(1, num_cities):
-        for j in range(i):
-            full_distance_matrix[i][j] = distance_matrix[i-1][j]
-            full_distance_matrix[j][i] = distance_matrix[i-1][j]
-    
-    return full_distance_matrix
+def make_symmetric(matrix):
+    n = len(matrix)
+    symmetric_matrix = [[0] * n for _ in range(n)]
 
+    for i in range(n):
+        for j in range(i + 1):  # Only iterate up to the diagonal (inclusive)
+            symmetric_matrix[i][j] = symmetric_matrix[j][i] = matrix[i][j]
 
-def initialize_population(population_size, num_cities):
+    return symmetric_matrix
+
+def total_distance(route, distance_matrix):
+    total = 0
+    for i in range(len(route) - 1):
+        total += distance_matrix[route[i]][route[i+1]]
+    total += distance_matrix[route[-1]][route[0]]  # Return to the starting city
+    return total
+
+def initialize_population(pop_size, num_cities):
     population = []
-    for _ in range(population_size):
-        individual = list(range(num_cities))
-        random.shuffle(individual)
-        population.append(individual)
+    for _ in range(pop_size):
+        route = list(range(num_cities))
+        random.shuffle(route)
+        population.append(route)
     return population
 
-def calculate_fitness(individual, distance_matrix):
-    fitness = sum(distance_matrix[individual[i-1], individual[i]] for i in range(len(individual)))
-    return fitness
+def tournament_selection(population, distances, k):
+    selected = random.sample(population, k)
+    return min(selected, key=lambda x: total_distance(x, distances))
 
-def tournament_selection(population, k, distance_matrix):
-    selected_parents = []
-    for _ in range(len(population)):
-        tournament = random.sample(population, k)
-        winner = min(tournament, key=lambda ind: calculate_fitness(ind, distance_matrix))
-        selected_parents.append(winner)
-    return selected_parents
+def pmx_crossover(parent1, parent2):
+    size = len(parent1)
+    a, b = random.sample(range(size), 2)
+    if a > b:
+        a, b = b, a
 
-def partially_mapped_crossover(parent1, parent2):
+    # Copy the selected part from parent1 to the child
+    child = parent1[a:b+1]
+    child_set = set(child)
 
-    length = len(parent1)
-    child1 = [None] * length
-    child2 = [None] * length
-    start, end = sorted(random.sample(range(length), 2))
+    # Fill the remaining elements from parent2
+    for i in range(size):
+        if i < a or i > b:
+            gene = parent2[i]
+            while gene in child_set:
+                idx = parent2.index(gene)
+                gene = parent2[(idx + 1) % size]
+            child.append(gene)
+            child_set.add(gene)
 
+    return child
 
-    child1[start:end] = parent1[start:end]
-    child2[start:end] = parent2[start:end]
+def inversion_mutation(route):
+    a, b = random.sample(range(len(route)), 2)
+    if a > b:
+        a, b = b, a
+    route[a:b+1] = reversed(route[a:b+1])
+    return route
 
+def exchange_mutation(route):
+    a, b = random.sample(range(len(route)), 2)
+    route[a], route[b] = route[b], route[a]
+    return route
 
-    mapping = {parent1[i]: parent2[i] for i in range(start, end)}
-
-
-    for i in range(length):
-        if child1[i] is None:
-            city = parent1[i]
-            while city in mapping:
-                city = mapping[city]
-            child1[i] = city
-
-    for i in range(length):
-        if child2[i] is None:
-            city = parent2[i]
-            while city in mapping:
-                city = mapping[city]
-            child2[i] = city
-
-    return child1, child2
-
-
-def inversion_mutation(individual):
-
-    start, end = sorted(random.sample(range(len(individual)), 2))
-    mutated_individual = individual[:start] + list(reversed(individual[start:end])) + individual[end:]
-    return mutated_individual
-
-def swap_mutation(individual):
-
-    pos1, pos2 = random.sample(range(len(individual)), 2)
-    mutated_individual = individual.copy()
-    mutated_individual[pos1], mutated_individual[pos2] = mutated_individual[pos2], mutated_individual[pos1]
-    return mutated_individual
-
-def genetic_algorithm(distance_matrix, population_size, tournament_size, crossover_prob, inversion_mut_prob, swap_mut_prob, num_generations):
-    num_cities = len(distance_matrix)
-    population = initialize_population(population_size, num_cities)
-
+def genetic_algorithm(distance_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations):
+    population = initialize_population(pop_size, len(distance_matrix))
+    
     for generation in range(num_generations):
+        new_population = []
 
-        parents = tournament_selection(population, tournament_size, distance_matrix)
+        for _ in range(pop_size // 2):
+            parent1 = tournament_selection(population, distance_matrix, tournament_size)
+            parent2 = tournament_selection(population, distance_matrix, tournament_size)
 
-
-        children = []
-        for i in range(0, len(parents), 2):
+            # Crossover
             if random.random() < crossover_prob:
-                child1, child2 = partially_mapped_crossover(parents[i], parents[i+1])
-                children.extend([child1, child2])
+                child1 = pmx_crossover(parent1, parent2)
+                child2 = pmx_crossover(parent2, parent1)
             else:
-                children.extend([parents[i], parents[i+1]])
+                child1, child2 = parent1[:], parent2[:]
+
+            # Mutation
+            if random.random() < inversion_prob:
+                child1 = inversion_mutation(child1)
+            if random.random() < inversion_prob:
+                child2 = inversion_mutation(child2)
+            if random.random() < exchange_prob:
+                child1 = exchange_mutation(child1)
+            if random.random() < exchange_prob:
+                child2 = exchange_mutation(child2)
+
+            new_population.extend([child1, child2])
+
+        # Replace the old population with the new one
+        population = new_population
+
+    # Find the best individual in the final population
+    best_route = min(population, key=lambda x: total_distance(x, distance_matrix))
+    best_distance = total_distance(best_route, distance_matrix)
+
+    return best_route, best_distance
+
+# Example usage
+file_path = 'berlin52.txt'
+symmetric_matrix_np = np.array(make_symmetric(load_triangular_matrix(file_path)))
+
+# Adjusted parameters
+pop_size = 10
+tournament_size = 3
+crossover_prob = 0.7
+inversion_prob = 0.05
+exchange_prob = 0.05
+num_generations = 10
+
+best_route, best_distance = genetic_algorithm(symmetric_matrix_np, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations)
+
+print("\nBest Route:")
+print(best_route + [best_route[0]])
+print("\nBest Distance:", best_distance)
 
 
-        for i in range(len(children)):
-            if random.random() < inversion_mut_prob:
-                children[i] = inversion_mutation(children[i])
-            if random.random() < swap_mut_prob:
-                children[i] = swap_mutation(children[i])
-
-
-        population = children
-
-    best_solution = min(population, key=lambda ind: calculate_fitness(ind, distance_matrix))
-    best_fitness = calculate_fitness(best_solution, distance_matrix)
-
-    return best_solution, best_fitness
-
-if __name__ == "__main__":
-
-    distance_matrix = read_distance_matrix("test.txt")
-    population_size = 10
-    tournament_size = 5
-    crossover_prob = 0.8
-    inversion_mut_prob = 0.1
-    swap_mut_prob = 0.1
-    num_generations = 10
-
-    best_solution, best_fitness = genetic_algorithm(distance_matrix, population_size, tournament_size,
-                                                    crossover_prob, inversion_mut_prob, swap_mut_prob, num_generations)
-
-    print("Najlepsze rozwiązanie:", best_solution)
-    print("Najlepsza długość trasy:", best_fitness)
+print("\nDistance matrix: ")
+print(symmetric_matrix_np)
