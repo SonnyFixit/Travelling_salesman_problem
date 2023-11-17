@@ -1,5 +1,7 @@
 import numpy as np
 import random
+import concurrent.futures
+from numba import njit
 
 def load_triangular_matrix(file_path):
     with open(file_path, 'r') as file:
@@ -19,11 +21,11 @@ def make_symmetric(matrix):
     return symmetric_matrix
 
 def total_distance(route, distance_matrix):
-    total = 0
-    for i in range(len(route) - 1):
-        total += distance_matrix[route[i]][route[i+1]]
-    total += distance_matrix[route[-1]][route[0]]  # Return to the starting city
-    return total
+    total_dist = 0.0
+    for i in range(len(route)):
+        total_dist += distance_matrix[route[i], route[(i + 1) % len(route)]]
+    return total_dist
+
 
 def initialize_population(pop_size, num_cities):
     population = []
@@ -65,6 +67,9 @@ def inversion_mutation(route):
         a, b = b, a
     route[a:b+1] = reversed(route[a:b+1])
     return route
+
+def evaluate_route(route, distance_matrix):
+    return total_distance(route, distance_matrix)
 
 def exchange_mutation(route):
     a, b = random.sample(range(len(route)), 2)
@@ -109,17 +114,62 @@ def genetic_algorithm(distance_matrix, pop_size, tournament_size, crossover_prob
 
     return best_route, best_distance
 
+def genetic_algorithm_parallel(distance_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations):
+    population = initialize_population(pop_size, len(distance_matrix))
+    
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        for generation in range(num_generations):
+            new_population = []
+
+            for _ in range(pop_size // 2):
+                parent1 = tournament_selection(population, distance_matrix, tournament_size)
+                parent2 = tournament_selection(population, distance_matrix, tournament_size)
+
+                # Crossover
+                if random.random() < crossover_prob:
+                    child1 = pmx_crossover(parent1, parent2)
+                    child2 = pmx_crossover(parent2, parent1)
+                else:
+                    child1, child2 = parent1[:], parent2[:]
+
+                # Mutation
+                if random.random() < inversion_prob:
+                    child1 = inversion_mutation(child1)
+                if random.random() < inversion_prob:
+                    child2 = inversion_mutation(child2)
+                if random.random() < exchange_prob:
+                    child1 = exchange_mutation(child1)
+                if random.random() < exchange_prob:
+                    child2 = exchange_mutation(child2)
+
+                new_population.extend([child1, child2])
+
+            # Replace the old population with the new one
+            population = new_population
+
+            # Evaluate fitness in parallel
+            fitness_values = list(executor.map(evaluate_route, population, [distance_matrix] * len(population)))
+
+            # Update the population based on fitness
+            population = [pop for _, pop in sorted(zip(fitness_values, population))]
+
+    # Find the best individual in the final population
+    best_route = population[0]
+    best_distance = total_distance(best_route, distance_matrix)
+
+    return best_route, best_distance
+
 # Example usage
 file_path = 'berlin52.txt'
 symmetric_matrix_np = np.array(make_symmetric(load_triangular_matrix(file_path)))
 
 # Adjusted parameters
-pop_size = 10
-tournament_size = 3
-crossover_prob = 0.7
-inversion_prob = 0.05
-exchange_prob = 0.05
-num_generations = 10
+pop_size = 1500
+tournament_size = 10
+crossover_prob = 0.8
+inversion_prob = 0.1
+exchange_prob = 0.1
+num_generations = 150
 
 best_route, best_distance = genetic_algorithm(symmetric_matrix_np, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations)
 
