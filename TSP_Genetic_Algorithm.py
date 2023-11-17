@@ -1,24 +1,26 @@
 import random
-""" import cProfile
-from line_profiler import LineProfiler """
+import time
 
+# Funkcja wczytująca trójkątną macierz z pliku
 def load_triangular_matrix(file_path):
     with open(file_path, 'r') as file:
-        # Skip the first row
+        # Pominięcie pierwszego wiersza
         lines = file.readlines()[1:]
         matrix = [list(map(int, line.split())) for line in lines]
     return matrix
 
+# Funkcja tworząca macierz symetryczną na podstawie podanej macierzy
 def make_symmetric(matrix):
     n = len(matrix)
     symmetric_matrix = [[0] * n for _ in range(n)]
 
     for i in range(n):
-        for j in range(i + 1):  # Only iterate up to the diagonal (inclusive)
+        for j in range(i + 1):  # Iteracja tylko do przekątnej (włącznie)
             symmetric_matrix[i][j] = symmetric_matrix[j][i] = matrix[i][j]
 
     return symmetric_matrix
 
+# Funkcja tworząca słownik z odległościami między miastami
 def create_distance_lookup(distance_matrix):
     num_cities = len(distance_matrix)
     distance_lookup = {}
@@ -29,16 +31,18 @@ def create_distance_lookup(distance_matrix):
 
     return distance_lookup
 
+# Funkcja obliczająca łączną odległość trasy
 def total_distance(route, distance_lookup):
     total_dist = 0.0
     num_cities = len(route)
 
     for i in range(num_cities):
-        # Look up the distance in the precalculated table
+        # Wyszukaj odległość w wcześniej obliczonej tabeli
         total_dist += distance_lookup[(route[i], route[(i + 1) % num_cities])]
 
     return total_dist
 
+# Funkcja inicjalizująca populację losowymi trasami
 def initialize_population(pop_size, num_cities):
     population = []
     for _ in range(pop_size):
@@ -47,58 +51,53 @@ def initialize_population(pop_size, num_cities):
         population.append(route)
     return population
 
-
-def tournament_selection(population, distances, k, fitness_values):
+# Funkcja selekcji turniejowej
+def tournament_selection(population, distances, k):
     selected = random.sample(population, k)
-    return min(selected, key=lambda x: fitness_values[population.index(x)])
+    return min(selected, key=lambda x: total_distance(x, distances))
 
+# Funkcja krzyżowania PMX
 def pmx_crossover(parent1, parent2):
     size = len(parent1)
     a, b = random.sample(range(size), 2)
     if a > b:
         a, b = b, a
 
-    child = [None] * size
-    child_set = set()
+    child = parent1[a:b+1]
+    child_set = set(child)
 
-    # Copy the selected portion from parent1
-    child[a:b+1] = parent1[a:b+1]
-    child_set.update(child[a:b+1])
-
-    # Map genes in the selected portion from parent2 to their indices
-    gene_to_index = {gene: idx for idx, gene in enumerate(parent2)}
-
-    # Fill the rest of the child using parent2
     for i in range(size):
         if i < a or i > b:
             gene = parent2[i]
             while gene in child_set:
-                idx = gene_to_index[gene]
+                idx = parent2.index(gene)
                 gene = parent2[(idx + 1) % size]
-            child[i] = gene
+            child.append(gene)
             child_set.add(gene)
 
     return child
 
-
+# Funkcja mutacji przez inwersję
 def inversion_mutation(route):
-    a, b = sorted(random.sample(range(len(route)), 2))
+    a, b = random.sample(range(len(route)), 2)
+    if a > b:
+        a, b = b, a
     route[a:b+1] = reversed(route[a:b+1])
     return route
 
-
+# Funkcja mutacji przez wymianę dwóch miast
 def exchange_mutation(route):
     a, b = random.sample(range(len(route)), 2)
     route[a], route[b] = route[b], route[a]
     return route
 
-
-def generate_population_and_evaluate(population, distance_lookup, tournament_size, fitness_values):
+# Funkcja generująca nową populację i oceniająca jej trasę
+def generate_population_and_evaluate(population, distance_lookup, tournament_size):
     new_population = []
 
     for _ in range(len(population) // 2):
-        parent1 = tournament_selection(population, distance_lookup, tournament_size, fitness_values)
-        parent2 = tournament_selection(population, distance_lookup, tournament_size, fitness_values)
+        parent1 = tournament_selection(population, distance_lookup, tournament_size)
+        parent2 = tournament_selection(population, distance_lookup, tournament_size)
 
         if random.random() < crossover_prob:
             child1 = pmx_crossover(parent1, parent2)
@@ -127,12 +126,12 @@ def generate_population_and_evaluate(population, distance_lookup, tournament_siz
 
     return new_population
 
+# Algorytm genetyczny
 def genetic_algorithm(distance_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, distance_lookup):
     population = initialize_population(pop_size, len(distance_matrix))
     
     for generation in range(num_generations):
-        fitness_values = [total_distance(individual, distance_lookup) for individual in population]
-        new_population = generate_population_and_evaluate(population, distance_lookup, tournament_size, fitness_values)
+        new_population = generate_population_and_evaluate(population, distance_lookup, tournament_size)
         population = new_population
 
     best_route = min(population, key=lambda x: total_distance(x, distance_lookup))
@@ -140,51 +139,25 @@ def genetic_algorithm(distance_matrix, pop_size, tournament_size, crossover_prob
 
     return best_route, best_distance
 
-# Example usage:
+# Parametry
 file_path = 'berlin52.txt'
 symmetric_matrix = make_symmetric(load_triangular_matrix(file_path))
-
-# Create the distance lookup table
 distance_lookup = create_distance_lookup(symmetric_matrix)
 
-# Adjusted parameters
-pop_size = 1500
+pop_size = 1000
 tournament_size = 10
 crossover_prob = 0.8
-inversion_prob = 0.15
-exchange_prob = 0.15
-num_generations = 250
+inversion_prob = 0.1
+exchange_prob = 0.1
+num_generations = 150
 
-""" # Profiling with cProfile
-cprofiler = cProfile.Profile()
-cprofiler.enable() """
-
+# Pomiar czasu wykonania algorytmu
+start_time = time.time()
 best_route, best_distance = genetic_algorithm(symmetric_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, distance_lookup=distance_lookup)
+end_time = time.time()
 
+# Wyświetlenie wyników
 print("\nBest Route:")
 print(best_route + [best_route[0]])
 print("\nBest Distance:", best_distance)
-
-""" cprofiler.disable()
-cprofiler.print_stats(sort='cumulative')
-
-# Profiling with line_profiler
-profiler = LineProfiler()
-
-# Add functions to be profiled
-profiler.add_function(total_distance)
-profiler.add_function(initialize_population)
-profiler.add_function(tournament_selection)
-profiler.add_function(pmx_crossover)
-profiler.add_function(inversion_mutation)
-profiler.add_function(create_distance_lookup)
-profiler.add_function(exchange_mutation)
-profiler.add_function(genetic_algorithm)
-profiler.add_function(generate_population_and_evaluate)
-
-# Run the code while profiling
-profiler_wrapper = profiler(genetic_algorithm)
-best_route, best_distance = genetic_algorithm(symmetric_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, distance_lookup=distance_lookup)
-
-# Print the results
-profiler.print_stats() """
+print("\nExecution Time:", end_time - start_time, "seconds")
