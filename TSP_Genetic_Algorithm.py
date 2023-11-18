@@ -1,6 +1,9 @@
 import random
 import time
 
+""" from line_profiler import LineProfiler
+from itertools import tee, islice, chain """
+
 # Funkcja wczytująca trójkątną macierz z pliku
 def load_triangular_matrix(file_path):
     with open(file_path, 'r') as file:
@@ -144,12 +147,16 @@ file_path = 'berlin52.txt'
 symmetric_matrix = make_symmetric(load_triangular_matrix(file_path))
 distance_lookup = create_distance_lookup(symmetric_matrix)
 
-pop_size = 1000
+pop_size = 5000
 tournament_size = 10
 crossover_prob = 0.8
-inversion_prob = 0.1
-exchange_prob = 0.1
+inversion_prob = 0.15
+exchange_prob = 0.15
 num_generations = 150
+
+""" # Profiling with cProfile
+cprofiler = cProfile.Profile()
+cprofiler.enable() """
 
 # Pomiar czasu wykonania algorytmu
 start_time = time.time()
@@ -161,3 +168,29 @@ print("\nBest Route:")
 print(best_route + [best_route[0]])
 print("\nBest Distance:", best_distance)
 print("\nExecution Time:", end_time - start_time, "seconds")
+
+
+""" cprofiler.disable()
+cprofiler.print_stats(sort='cumulative')
+
+# Profiling with line_profiler
+profiler = LineProfiler()
+
+# Add functions to be profiled
+profiler.add_function(total_distance)
+profiler.add_function(initialize_population)
+profiler.add_function(tournament_selection)
+profiler.add_function(pmx_crossover)
+profiler.add_function(inversion_mutation)
+profiler.add_function(create_distance_lookup)
+profiler.add_function(exchange_mutation)
+profiler.add_function(genetic_algorithm)
+profiler.add_function(generate_population_and_evaluate)
+
+# Run the code while profiling
+profiler_wrapper = profiler(genetic_algorithm)
+best_route, best_distance = genetic_algorithm(symmetric_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, distance_lookup=distance_lookup)
+
+
+# Print the results
+profiler.print_stats() """
