@@ -129,7 +129,31 @@ def generate_population_and_evaluate(population, distance_lookup, tournament_siz
 
     return new_population
 
-# Algorytm genetyczny
+# Algorytm genetyczny z elitaryzmem
+def genetic_algorithm_with_elitism(distance_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, elitism_ratio, distance_lookup):
+    population = initialize_population(pop_size, len(distance_matrix))
+    elitism_count = int(elitism_ratio * pop_size)
+
+    for generation in range(num_generations):
+        new_population = generate_population_and_evaluate(population, distance_lookup, tournament_size)
+        new_population.sort(key=lambda x: total_distance(x, distance_lookup))
+        
+        # Elitism: Preserve the best individuals from the current population
+        elite_individuals = new_population[:elitism_count]
+        
+        # Generate the rest of the population through genetic operations
+        non_elite_population = new_population[elitism_count:]
+        offspring_population = generate_population_and_evaluate(non_elite_population, distance_lookup, tournament_size)
+        
+        # Combine elite and offspring populations to form the next generation
+        population = elite_individuals + offspring_population
+
+    best_route = min(population, key=lambda x: total_distance(x, distance_lookup))
+    best_distance = total_distance(best_route, distance_lookup)
+
+    return best_route, best_distance
+
+# Algorytm genetyczny - główna funkcja
 def genetic_algorithm(distance_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, distance_lookup):
     population = initialize_population(pop_size, len(distance_matrix))
     
@@ -147,20 +171,21 @@ file_path = 'berlin52.txt'
 symmetric_matrix = make_symmetric(load_triangular_matrix(file_path))
 distance_lookup = create_distance_lookup(symmetric_matrix)
 
-pop_size = 5000
-tournament_size = 10
-crossover_prob = 0.8
-inversion_prob = 0.15
-exchange_prob = 0.15
-num_generations = 150
+pop_size = 100
+tournament_size = 3
+crossover_prob = 0.85
+inversion_prob = 0.1
+exchange_prob = 0.1
+num_generations = 50000
+elitism_ratio = 0.05
 
-""" # Profiling with cProfile
+""" # Profilowanie z cProfile
 cprofiler = cProfile.Profile()
 cprofiler.enable() """
 
 # Pomiar czasu wykonania algorytmu
 start_time = time.time()
-best_route, best_distance = genetic_algorithm(symmetric_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, distance_lookup=distance_lookup)
+best_route, best_distance = genetic_algorithm_with_elitism(symmetric_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, elitism_ratio, distance_lookup=distance_lookup)
 end_time = time.time()
 
 # Wyświetlenie wyników
@@ -169,14 +194,13 @@ print(best_route + [best_route[0]])
 print("\nBest Distance:", best_distance)
 print("\nExecution Time:", end_time - start_time, "seconds")
 
-
 """ cprofiler.disable()
 cprofiler.print_stats(sort='cumulative')
 
-# Profiling with line_profiler
+# Profilowanie z line_profiler
 profiler = LineProfiler()
 
-# Add functions to be profiled
+# Dodawanie funkcje do profilowania
 profiler.add_function(total_distance)
 profiler.add_function(initialize_population)
 profiler.add_function(tournament_selection)
@@ -187,10 +211,9 @@ profiler.add_function(exchange_mutation)
 profiler.add_function(genetic_algorithm)
 profiler.add_function(generate_population_and_evaluate)
 
-# Run the code while profiling
+# Odpalenie algorytmu do profilowania
 profiler_wrapper = profiler(genetic_algorithm)
 best_route, best_distance = genetic_algorithm(symmetric_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, distance_lookup=distance_lookup)
 
-
-# Print the results
+# Drukowanie wyników profilowania
 profiler.print_stats() """
