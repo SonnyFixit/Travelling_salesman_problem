@@ -129,7 +129,7 @@ def generate_population_and_evaluate(population, distance_lookup, tournament_siz
 
     return new_population
 
-# Algorytm genetyczny z elitaryzmem
+# Algorytm genetyczny z poprawioną kalkulacją
 def genetic_algorithm_with_elitism(distance_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, elitism_ratio, distance_lookup):
     population = initialize_population(pop_size, len(distance_matrix))
     elitism_count = int(elitism_ratio * pop_size)
@@ -153,21 +153,8 @@ def genetic_algorithm_with_elitism(distance_matrix, pop_size, tournament_size, c
 
     return best_route, best_distance
 
-# Algorytm genetyczny - główna funkcja
-def genetic_algorithm(distance_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, distance_lookup):
-    population = initialize_population(pop_size, len(distance_matrix))
-    
-    for generation in range(num_generations):
-        new_population = generate_population_and_evaluate(population, distance_lookup, tournament_size)
-        population = new_population
-
-    best_route = min(population, key=lambda x: total_distance(x, distance_lookup))
-    best_distance = total_distance(best_route, distance_lookup)
-
-    return best_route, best_distance
-
 # Parametry
-file_path = 'berlin52.txt'
+file_path = 'kroA100_4.txt'
 symmetric_matrix = make_symmetric(load_triangular_matrix(file_path))
 distance_lookup = create_distance_lookup(symmetric_matrix)
 
@@ -176,7 +163,7 @@ tournament_size = 3
 crossover_prob = 0.85
 inversion_prob = 0.1
 exchange_prob = 0.1
-num_generations = 50000
+num_generations = 100000
 elitism_ratio = 0.05
 
 """ # Profilowanie z cProfile
