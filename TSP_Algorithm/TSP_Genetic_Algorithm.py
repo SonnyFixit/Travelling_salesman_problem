@@ -1,11 +1,13 @@
 import random
 import time
+import os
 
 from line_profiler import LineProfiler
 from itertools import tee, islice, chain
 
-# Function to load a triangular matrix from a file
-def load_triangular_matrix(file_path):
+def load_triangular_matrix(file_name):
+    # Construct the full file path by including the folder name
+    file_path = os.path.join('DistanceMatrices', file_name)
     with open(file_path, 'r') as file:
         # Skip the first line
         lines = file.readlines()[1:]
@@ -154,8 +156,8 @@ def genetic_algorithm_with_elitism(distance_matrix, pop_size, tournament_size, c
     return best_route, best_distance
 
 # Parameters
-file_path = 'berlin52.txt.txt'
-symmetric_matrix = make_symmetric(load_triangular_matrix(file_path))
+file_name = 'berlin52.txt'
+symmetric_matrix = make_symmetric(load_triangular_matrix(file_name))
 distance_lookup = create_distance_lookup(symmetric_matrix)
 
 pop_size = 100
