@@ -1,29 +1,30 @@
 import random
 import time
 
-""" from line_profiler import LineProfiler
-from itertools import tee, islice, chain """
+from line_profiler import LineProfiler
+from itertools import tee, islice, chain
 
-# Funkcja wczytująca trójkątną macierz z pliku
+# Function to load a triangular matrix from a file
 def load_triangular_matrix(file_path):
     with open(file_path, 'r') as file:
-        # Pominięcie pierwszego wiersza
+        # Skip the first line
         lines = file.readlines()[1:]
         matrix = [list(map(int, line.split())) for line in lines]
     return matrix
 
-# Funkcja tworząca macierz symetryczną na podstawie podanej macierzy
+# Function to create a symmetric matrix from a given matrix
 def make_symmetric(matrix):
     n = len(matrix)
     symmetric_matrix = [[0] * n for _ in range(n)]
 
+    # Iterate only up to the diagonal (inclusive)
     for i in range(n):
-        for j in range(i + 1):  # Iteracja tylko do przekątnej (włącznie)
+        for j in range(i + 1):  
             symmetric_matrix[i][j] = symmetric_matrix[j][i] = matrix[i][j]
 
     return symmetric_matrix
 
-# Funkcja tworząca słownik z odległościami między miastami
+# Function to create a dictionary with distances between cities
 def create_distance_lookup(distance_matrix):
     num_cities = len(distance_matrix)
     distance_lookup = {}
@@ -34,7 +35,7 @@ def create_distance_lookup(distance_matrix):
 
     return distance_lookup
 
-# Funkcja obliczająca łączną odległość trasy
+# Function to calculate the total distance of a route
 def total_distance(route, distance_lookup):
     total_dist = 0.0
     num_cities = len(route)
@@ -44,7 +45,7 @@ def total_distance(route, distance_lookup):
 
     return total_dist
 
-# Funkcja inicjalizująca populację losowymi trasami
+# Function to initialize a population with random routes
 def initialize_population(pop_size, num_cities):
     population = []
     for _ in range(pop_size):
@@ -53,12 +54,12 @@ def initialize_population(pop_size, num_cities):
         population.append(route)
     return population
 
-# Funkcja selekcji turniejowej
+# Tournament selection function
 def tournament_selection(population, distances, k):
     selected = random.sample(population, k)
     return min(selected, key=lambda x: total_distance(x, distances))
 
-# Funkcja krzyżowania PMX
+# PMX crossover function
 def pmx_crossover(parent1, parent2):
     size = len(parent1)
     a, b = random.sample(range(size), 2)
@@ -79,7 +80,7 @@ def pmx_crossover(parent1, parent2):
 
     return child
 
-# Funkcja mutacji przez inwersję
+# Inversion mutation function
 def inversion_mutation(route):
     a, b = random.sample(range(len(route)), 2)
     if a > b:
@@ -87,13 +88,13 @@ def inversion_mutation(route):
     route[a:b+1] = reversed(route[a:b+1])
     return route
 
-# Funkcja mutacji przez wymianę dwóch miast
+# Exchange mutation function
 def exchange_mutation(route):
     a, b = random.sample(range(len(route)), 2)
     route[a], route[b] = route[b], route[a]
     return route
 
-# Funkcja generująca nową populację i oceniająca jej trasę
+# Function to generate a new population and evaluate their routes
 def generate_population_and_evaluate(population, distance_lookup, tournament_size):
     new_population = []
 
@@ -128,7 +129,7 @@ def generate_population_and_evaluate(population, distance_lookup, tournament_siz
 
     return new_population
 
-# Algorytm genetyczny z poprawioną kalkulacją
+# Genetic algorithm with improved calculation
 def genetic_algorithm_with_elitism(distance_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, elitism_ratio, distance_lookup):
     population = initialize_population(pop_size, len(distance_matrix))
     elitism_count = int(elitism_ratio * pop_size)
@@ -137,7 +138,7 @@ def genetic_algorithm_with_elitism(distance_matrix, pop_size, tournament_size, c
         new_population = generate_population_and_evaluate(population, distance_lookup, tournament_size)
         new_population.sort(key=lambda x: total_distance(x, distance_lookup))
         
-        # Elitism: Preserve the best individuals from the current population
+        # Preserve the best individuals from the current population
         elite_individuals = new_population[:elitism_count]
         
         # Generate the rest of the population through genetic operations
@@ -152,41 +153,38 @@ def genetic_algorithm_with_elitism(distance_matrix, pop_size, tournament_size, c
 
     return best_route, best_distance
 
-# Parametry
-file_path = 'pa561_5.txt'
+# Parameters
+file_path = 'berlin52.txt.txt'
 symmetric_matrix = make_symmetric(load_triangular_matrix(file_path))
 distance_lookup = create_distance_lookup(symmetric_matrix)
 
 pop_size = 100
 tournament_size = 3
 crossover_prob = 0.85
-inversion_prob = 0.1
-exchange_prob = 0.1
+inversion_prob = 0.15
+exchange_prob = 0.15
 num_generations = 100000
 elitism_ratio = 0.05
 
-""" # Profilowanie z cProfile
-cprofiler = cProfile.Profile()
-cprofiler.enable() """
-
-# Pomiar czasu wykonania algorytmu
+# Measure execution time of the algorithm
 start_time = time.time()
 best_route, best_distance = genetic_algorithm_with_elitism(symmetric_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, elitism_ratio, distance_lookup=distance_lookup)
 end_time = time.time()
 
-# Wyświetlenie wyników
+# Display the results
 print("\nBest Route:")
 print(best_route + [best_route[0]])
 print("\nBest Distance:", best_distance)
 print("\nExecution Time:", end_time - start_time, "seconds")
 
+
 """ cprofiler.disable()
 cprofiler.print_stats(sort='cumulative')
 
-# Profilowanie z line_profiler
+# Profiling with line_profiler
 profiler = LineProfiler()
 
-# Dodawanie funkcje do profilowania
+# Adding functions to profile
 profiler.add_function(total_distance)
 profiler.add_function(initialize_population)
 profiler.add_function(tournament_selection)
@@ -197,9 +195,9 @@ profiler.add_function(exchange_mutation)
 profiler.add_function(genetic_algorithm)
 profiler.add_function(generate_population_and_evaluate)
 
-# Odpalenie algorytmu do profilowania
+# Start profiling algorithm
 profiler_wrapper = profiler(genetic_algorithm)
 best_route, best_distance = genetic_algorithm(symmetric_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, distance_lookup=distance_lookup)
 
-# Drukowanie wyników profilowania
+# Printing profiling results
 profiler.print_stats() """

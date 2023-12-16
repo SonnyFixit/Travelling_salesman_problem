@@ -26,7 +26,7 @@ The code includes functions for loading distance matrices, creating symmetric ma
 
 ## Technologies
 
-* Python 3.x
+* Python 3.11.3
 * Visual Studio Code
 
 ## Features

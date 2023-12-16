@@ -1,0 +1,80 @@
+Genetic Algorithm for the Traveling Salesman Problem
+
+1. Used data
+
+    Distance Matrix: Loaded from a text file, represents a symmetric matrix of distances between cities.
+    Distance Dictionary: Created based on the distance matrix, facilitates quick access to the distance between any two cities.
+
+2. Functions
+
+    load_triangular_matrix(file_path):
+        Loads a triangular distance matrix from a text file.
+
+    make_symmetric(matrix):
+        Creates a symmetric distance matrix based on the loaded triangular matrix.
+
+    create_distance_lookup(distance_matrix):
+        Creates a distance dictionary based on the symmetric distance matrix.
+
+    total_distance(route, distance_lookup):
+        Calculates the total distance for a given route based on the distance dictionary.
+
+    initialize_population(pop_size, num_cities):
+        Initializes a population with random routes.
+
+    tournament_selection(population, distances, k):
+         Performs tournament selection, choosing the best route among k randomly selected routes.
+
+    pmx_crossover(parent1, parent2):
+        Performs Partially Mapped Crossover (PMX) between two parents.
+
+    inversion_mutation(route):
+        Performs a mutation through inversion on a given route.
+
+    exchange_mutation(route):
+        Performs a mutation through the exchange of two cities on a given route.
+
+    generate_population_and_evaluate(population, distance_lookup, tournament_size):
+        Creates a new population through selection, crossover, and mutation, and then evaluates the route of each individual.
+
+    genetic_algorithm(distance_matrix, pop_size, tournament_size, crossover_prob, inversion_prob, exchange_prob, num_generations, distance_lookup):
+        The main function implementing the genetic algorithm. 
+        Initializes the population and, in an evolutionary loop, creates and evaluates a new population for a specified number of generations. 
+        Returns the best route and its length.
+
+3. Parameters
+
+    pop_size: The number of individuals in the population.
+    tournament_size: The number of individuals participating in the tournament selection.
+    crossover_prob: The probability of crossover.
+    inversion_prob: The probability of mutation through inversion.
+    exchange_prob: The probability of mutation through exchange.
+    num_generations: The number of iterations of the genetic algorithm.
+
+4. Results
+
+    The best route and its length are displayed upon completion of the algorithm.
+    Execution time is measured to assess the algorithm's efficiency.
+
+5. Uwagi
+
+    The parameters of the algorithm can affect its effectiveness.
+    Experimenting with parameter values can lead to better results.
+
+6. Example Usage
+
+    Loading the distance matrix from a file, setting parameters, and running the algorithm.
+
+Summary
+
+The code implements a genetic algorithm to solve the Traveling Salesman Problem, where route representation is based on permutations of cities. 
+Example of results for berlin52.txt:
+
+Best Route:
+[21, 0, 48, 31, 44, 18, 40, 7, 8, 9, 42, 32, 50, 10, 51, 13, 12, 46, 25, 26, 27, 11, 24, 3, 5, 14, 4, 23, 47, 37, 36, 39, 38, 35, 34, 33, 43, 45, 15, 28, 49, 19, 22, 29, 1, 6, 41, 20, 16, 2, 17, 30, 21]
+
+Best Distance: 7542.0
+
+Execution Time: 16.968725204467773 seconds
+
+Optimal routes for berlin52 start from around 8000, good results are below 8000.
