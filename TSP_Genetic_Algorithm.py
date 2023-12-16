@@ -29,8 +29,8 @@ def create_distance_lookup(distance_matrix):
     distance_lookup = {}
 
     for i in range(num_cities):
-        for j in range(num_cities):
-            distance_lookup[(i, j)] = distance_matrix[i][j]
+        for j in range(i, num_cities): 
+            distance_lookup[(i, j)] = distance_lookup[(j, i)] = distance_matrix[i][j]
 
     return distance_lookup
 
@@ -40,7 +40,6 @@ def total_distance(route, distance_lookup):
     num_cities = len(route)
 
     for i in range(num_cities):
-        # Wyszukaj odległość w wcześniej obliczonej tabeli
         total_dist += distance_lookup[(route[i], route[(i + 1) % num_cities])]
 
     return total_dist
@@ -154,7 +153,7 @@ def genetic_algorithm_with_elitism(distance_matrix, pop_size, tournament_size, c
     return best_route, best_distance
 
 # Parametry
-file_path = 'kroA100_4.txt'
+file_path = 'pa561_5.txt'
 symmetric_matrix = make_symmetric(load_triangular_matrix(file_path))
 distance_lookup = create_distance_lookup(symmetric_matrix)
 
