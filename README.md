@@ -18,16 +18,17 @@ The code includes functions for loading distance matrices, creating symmetric ma
 
 ## Key Programming Practices
 
-* Modularity: The code is organized into functions for easy readability and maintainability.
-* Efficiency: Algorithms are optimized for efficient computation of routes and distances.
-* Readability: Consistent naming conventions and code structuring are used for clarity.
-* Error Handling: Rrror handling to ensure reliable operation under various input scenarios.
-* Documentation: Comprehensive comments to explain the functionality of each part of the code.
+**Modularity:** The code is organized into functions for easy readability and maintainability.
+**Efficiency:** Algorithms are optimized for efficient computation of routes and distances.
+**Readability:** Consistent naming conventions and code structuring are used for clarity.
+**Error Handling:** Rrror handling to ensure reliable operation under various input scenarios.
+**Documentation:** Comprehensive comments to explain the functionality of each part of the code.
 
 ## Technologies
 
 * Python 3.11.3
 * Visual Studio Code
+* LineProfiler
 
 ## Features
 
@@ -40,7 +41,7 @@ The code includes functions for loading distance matrices, creating symmetric ma
 
 ## How to run
 
-* Ensure Python 3.x is installed.
+* Ensure right version of Python is installed.
 * Place the triangular matrix file in the same directory as the script.
 * Run the script in a Python environment.
 * The best route and distance will be displayed, along with the execution time.
